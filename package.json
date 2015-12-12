@@ -1,0 +1,17 @@
+{
+  "name": "devManager",
+  "description": "devManager",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:spoutnikz/devManager.git"
+  },
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+      "gulp": "*",
+      "gulp-babel": "^5.1.0",
+      "gulp-plumber": "*",
+      "gulp-rename": "^1.2.0",
+      "gulp-browserify": "*"
+  }
+}
