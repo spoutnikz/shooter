@@ -1,8 +1,7 @@
 'use strict';
-
-var devManager = require('devManager');
+var Application = require('application');
 
 (function () {
-  console.log('init $:', $('body'));
-  console.log('init devManager:', devManager);
+  console.log('Init Application');
+  var application = new Application();
 })();

@@ -4,23 +4,33 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var devManager = (function () {
-  function devManager() {
-    _classCallCheck(this, devManager);
+var GameModel = require('gameModel');
+var GameView = require('gameView');
 
-    console.log('devManager constructor');
-    this.test();
+var GameController = (function () {
+  function GameController(engine) {
+    _classCallCheck(this, GameController);
+
+    this.engine = engine;
+    this.gameModel = new GameModel();
+    this.gameView = new GameView(this.gameModel, this.engine);
+    console.log('GameController constructor');
   }
 
-  _createClass(devManager, [{
-    key: 'test',
-    value: function test() {
-      console.log('in test');
+  _createClass(GameController, [{
+    key: 'update',
+    value: function update() {
+      var playerModel = this.gameModel.playerModel;
+      playerModel.position = [this.engine.mouseX, this.engine.mouseY];
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      this.gameView.render();
     }
   }]);
 
-  return devManager;
+  return GameController;
 })();
 
-module.exports = {
-  devManager: devManager };
+module.exports = GameController;

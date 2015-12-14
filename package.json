@@ -12,6 +12,7 @@
       "gulp-babel": "^5.1.0",
       "gulp-plumber": "*",
       "gulp-rename": "^1.2.0",
-      "gulp-browserify": "*"
+      "gulp-browserify": "*",
+      "del": "^1.1.1"
   }
 }
