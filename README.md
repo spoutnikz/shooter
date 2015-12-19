@@ -1,4 +1,4 @@
-# devManager
+# simple shooter
 
 Compile:
 gulp package
