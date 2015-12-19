@@ -4,38 +4,37 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var BugModel = require('bugModel');
-var PlayerModel = require('playerModel');
+var Utils = require('utils');
 
-var GameModel = (function () {
-  function GameModel() {
-    _classCallCheck(this, GameModel);
+var Board = (function () {
+  function Board(engine, event) {
+    _classCallCheck(this, Board);
 
-    console.log('GameModel constructor');
+    this.engine = engine;
+    this.event = event;
 
-    this._playerModel = new PlayerModel();
-    this._bugModels = [];
+    this.type = 'board';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
 
-    for (var i = 0; i < 4; i++) {
-      this.bugModels.push(new BugModel());
-    }
-
-    console.log('gameModel: playerModel, bugModels:', this._playerModel, this.bugModels);
+    // this.alpha = 5;
+    this.alpha = 255;
   }
 
-  _createClass(GameModel, [{
-    key: 'playerModel',
-    get: function () {
-      return this._playerModel;
-    }
+  _createClass(Board, [{
+    key: 'init',
+    value: function init() {}
   }, {
-    key: 'bugModels',
-    get: function () {
-      return this._bugModels;
+    key: 'update',
+    value: function update() {}
+  }, {
+    key: 'render',
+    value: function render() {
+      this.engine.background(25, 25, 25, 255);
     }
   }]);
 
-  return GameModel;
+  return Board;
 })();
 
-module.exports = GameModel;
+module.exports = Board;

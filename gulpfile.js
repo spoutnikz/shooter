@@ -35,7 +35,7 @@ gulp.task('package', function() {
           gulp.src('src/js/init.js', { read: false })
           .pipe(plumber(function (err) { console.log(err); this.emit('end'); }))
             .pipe(browserify({
-              paths: ['./src/js', './src/js/model', './src/js/view', './src/js/controller']
+              paths: ['./src/js', './src/js/core']
             }))
             .pipe(rename('app.js'))
             .pipe(gulp.dest('public/js'))

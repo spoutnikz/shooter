@@ -13,39 +13,107 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var GameController = require('gameController');
+var Board = require('board');
+var Fps = require('fps');
+var Player = require('player');
+var Bug = require('bug');
+var Utils = require('utils');
+var Event = require('event');
 
 var Application = (function () {
   function Application($container) {
-    var _this = this;
-
     _classCallCheck(this, Application);
 
-    console.log('Application constructor, new gameController: ', this.gameController, p5);
-    this.x = 0;
-    this.y = 0;
-    this.up = true;
+    console.log('Application constructor');
 
-    this.engine = new p5(function (p) {
-      p.setup = _this.setup.bind(_this);
-      p.draw = _this.draw.bind(_this);
-    });
+    this.entities = new Map();
+    this.entities.set('collidable', new Map());
+    this.entities.set('stage', new Map());
+
+    this.event = new Event();
+    this.event.addListener('kill', this.kill.bind(this));
+
+    this.init();
   }
 
   _createClass(Application, [{
+    key: 'init',
+    value: function init() {
+      var _this = this;
+
+      this.engine = new p5(function (p) {
+        p.setup = _this.setup.bind(_this);
+        p.draw = _this.draw.bind(_this);
+      }, 'container');
+    }
+  }, {
     key: 'setup',
     value: function setup() {
       console.log('engine setup');
-      this.gameController = new GameController(this.engine);
+      window.p = this.engine;
+
+      // collision detection
+      this.quad = new QuadTree({ x: 0, y: 0, width: 640, height: 360 }, false, 7);
+
+      // create all entities and put them in maps
+      var board = new Board(this.engine, this.event);
+      var fps = new Fps(this.engine, this.event);
+      var player = new Player(this.engine, this.event);
+
+      this.entities.get('stage').set(board.uid, board);
+      this.entities.get('stage').set(fps.uid, fps);
+      this.entities.get('collidable').set(player.uid, player);
+
+      for (var i = 0; i < 50; i++) {
+        var bug = new Bug(this.engine, this.event);
+        this.entities.get('collidable').set(bug.uid, bug);
+      };
+
+      // init canvas
+      this.engine.createCanvas(640, 360);
+      this.engine.background(25, 25, 0);
     }
   }, {
     key: 'draw',
 
-    // game main loop
+    // main loop
     value: function draw() {
-      // console.log('engine draw loop');
-      this.gameController.update();
-      this.gameController.render();
+      var _this2 = this;
+
+      // reset quad tree
+      this.quad.clear();
+      this.quad.insert(this.entities.get('collidable'));
+
+      // collision detection
+      this.entities.get('collidable').forEach(function (entity, i) {
+        var items = _this2.quad.retrieve(entity);
+        items.forEach(function (item) {
+          if (item.isColliding && entity.isColliding || entity.type === item.type) {
+            return;
+          }
+          if (Utils.intersects(entity.x, entity.y, entity.radius, item.x, item.y, item.radius)) {
+            entity.isColliding = true;
+            entity.collidingWith = item;
+          }
+        });
+      });
+
+      // entities updates & renders
+      this.entities.get('stage').forEach(function (entity) {
+        entity.update();
+        entity.render(); // put in a separate loop?
+      });
+
+      this.entities.get('collidable').forEach(function (entity) {
+        entity.update();
+        entity.render(); // put in a separate loop?
+      });
+    }
+  }, {
+    key: 'kill',
+    value: function kill(me) {
+
+      this.entities.get('collidable')['delete'](me.uid);
     }
   }]);
 
@@ -53,153 +121,222 @@ var Application = (function () {
 })();
 
 module.exports = Application;
-},{"gameController":3}],3:[function(require,module,exports){
+},{"board":3,"bug":4,"event":5,"fps":7,"player":8,"utils":6}],3:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var GameModel = require('gameModel');
-var GameView = require('gameView');
+var Utils = require('utils');
 
-var GameController = (function () {
-  function GameController(engine) {
-    _classCallCheck(this, GameController);
+var Board = (function () {
+  function Board(engine, event) {
+    _classCallCheck(this, Board);
 
     this.engine = engine;
-    this.gameModel = new GameModel();
-    this.gameView = new GameView(this.gameModel, this.engine);
-    console.log('GameController constructor');
+    this.event = event;
+
+    this.type = 'board';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
+
+    // this.alpha = 5;
+    this.alpha = 255;
   }
 
-  _createClass(GameController, [{
+  _createClass(Board, [{
+    key: 'init',
+    value: function init() {}
+  }, {
+    key: 'update',
+    value: function update() {}
+  }, {
+    key: 'render',
+    value: function render() {
+      this.engine.background(25, 25, 25, 255);
+    }
+  }]);
+
+  return Board;
+})();
+
+module.exports = Board;
+},{"utils":6}],4:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var Utils = require('utils');
+
+var Bug = (function () {
+  function Bug(engine, event) {
+    _classCallCheck(this, Bug);
+
+    this.engine = engine;
+    this.event = event;
+
+    this.type = 'bug';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
+
+    this.isColliding = false;
+    this.collidingWith = null;
+
+    this.x = Utils.rand(600, 640);
+    this.y = Utils.rand(50, 300);
+    this.width = this.height = this.radius = 10;
+
+    this.index = null;
+    this.level = 1;
+    this.color = [Utils.rand(50, 255), Utils.rand(50, 255), Utils.rand(50, 255), 255];
+    this.velocity = Utils.rand(10, 100) / 100;
+  }
+
+  _createClass(Bug, [{
+    key: 'init',
+    value: function init() {}
+  }, {
     key: 'update',
     value: function update() {
-      var playerModel = this.gameModel.playerModel;
-      playerModel.position = [this.engine.mouseX, this.engine.mouseY];
+      this.x = this.x - this.velocity; // drift to left
+
+      if (this.x < 0 || this.isColliding) {
+        this.event.emit('kill', this);
+      }
     }
   }, {
     key: 'render',
     value: function render() {
-      this.gameView.render();
+
+      var alpha = this.isColliding ? 50 : 255;
+
+      this.engine.noStroke();
+      this.engine.fill(this.color[0], this.color[1], this.color[2], alpha);
+
+      this.engine.ellipseMode(this.engine.RADIUS);
+      this.engine.ellipse(this.x, this.y, this.width, this.height);
     }
   }]);
 
-  return GameController;
+  return Bug;
 })();
 
-module.exports = GameController;
-},{"gameModel":5,"gameView":7}],4:[function(require,module,exports){
-'use strict';
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
-
-var BugModel = function BugModel() {
-  _classCallCheck(this, BugModel);
-
-  console.log('BugModel constructor');
-};
-
-module.exports = BugModel;
-},{}],5:[function(require,module,exports){
+module.exports = Bug;
+},{"utils":6}],5:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var BugModel = require('bugModel');
-var PlayerModel = require('playerModel');
+var Event = (function () {
+    // 'Subject', Observer pattern
 
-var GameModel = (function () {
-  function GameModel() {
-    _classCallCheck(this, GameModel);
+    function Event() {
+        _classCallCheck(this, Event);
 
-    console.log('GameModel constructor');
-
-    this._playerModel = new PlayerModel();
-    this._bugModels = [];
-
-    for (var i = 0; i < 4; i++) {
-      this.bugModels.push(new BugModel());
+        console.log('Event constructor');
+        this.listeners = new Map(); // use WeakMaps instead to avoid possible leaks?
     }
 
-    console.log('gameModel: playerModel, bugModels:', this._playerModel, this.bugModels);
-  }
+    _createClass(Event, [{
+        key: 'addListener',
+        value: function addListener(label, callback) {
+            this.listeners.has(label) || this.listeners.set(label, []);
+            this.listeners.get(label).push(callback);
+        }
+    }, {
+        key: 'removeListener',
+        value: function removeListener(label, callback) {
+            var listeners = this.listeners.get(label),
+                index = undefined;
 
-  _createClass(GameModel, [{
-    key: 'playerModel',
-    get: function () {
-      return this._playerModel;
-    }
-  }, {
-    key: 'bugModels',
-    get: function () {
-      return this._bugModels;
-    }
-  }]);
+            if (listeners && listeners.length) {
+                index = listeners.reduce(function (i, listener, index) {
+                    return typeof listener === 'function' && listener === callback ? i = index : i;
+                }, -1);
 
-  return GameModel;
+                if (index > -1) {
+                    listeners.splice(index, 1);
+                    this.listeners.set(label, listeners);
+                    return true;
+                }
+            }
+            return false;
+        }
+    }, {
+        key: 'emit',
+        value: function emit(label) {
+            for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+                args[_key - 1] = arguments[_key];
+            }
+
+            var listeners = this.listeners.get(label);
+
+            if (listeners && listeners.length) {
+                listeners.forEach(function (listener) {
+                    listener.apply(undefined, args);
+                });
+                return true;
+            }
+            return false;
+        }
+    }]);
+
+    return Event;
 })();
 
-module.exports = GameModel;
-},{"bugModel":4,"playerModel":6}],6:[function(require,module,exports){
+module.exports = Event;
+},{}],6:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var PlayerModel = (function () {
-  function PlayerModel() {
-    _classCallCheck(this, PlayerModel);
-
-    this._position = [0, 0];
-    this._level = 1;
-    this._dimensions = [50, 50];
-    this._color = [255, 204, 0];
-    console.log('PlayerModel constructor');
+var Utils = (function () {
+  function Utils() {
+    _classCallCheck(this, Utils);
   }
 
-  _createClass(PlayerModel, [{
-    key: 'position',
-    get: function () {
-      return this._position;
-    },
-    set: function (position) {
-      this._position = position;
+  _createClass(Utils, null, [{
+    key: 'rand',
+    value: function rand(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
     }
   }, {
-    key: 'level',
-    get: function () {
-      return this._level;
-    },
-    set: function (level) {
-      if (level > 0 && level <= 5) this._level = level;
+    key: 'intersects',
+    value: function intersects(x1, y1, r1, x2, y2, r2) {
+      // does two circles intersects?
+      var distanceSq = Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
+      return Math.pow(r2 - r1, 2) <= distanceSq && distanceSq <= Math.pow(r1 + r2, 2);
     }
   }, {
-    key: 'dimensions',
-    get: function () {
-      return this._dimensions;
-    },
-    set: function (dimensions) {
-      this._dimensions = dimensions;
-    }
-  }, {
-    key: 'color',
-    get: function () {
-      return this._color;
-    },
-    set: function (color) {
-      this._color = color;
+    key: 'uid',
+    value: function uid() {
+
+      // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript#answer-21963136
+      // lookuptable
+      var lut = [];for (var i = 0; i < 256; i++) {
+        lut[i] = (i < 16 ? '0' : '') + i.toString(16);
+      }
+
+      var d0 = Math.random() * 4294967295 | 0;
+      var d1 = Math.random() * 4294967295 | 0;
+      var d2 = Math.random() * 4294967295 | 0;
+      var d3 = Math.random() * 4294967295 | 0;
+
+      return lut[d0 & 255] + lut[d0 >> 8 & 255] + lut[d0 >> 16 & 255] + lut[d0 >> 24 & 255] + '-' + lut[d1 & 255] + lut[d1 >> 8 & 255] + '-' + lut[d1 >> 16 & 15 | 64] + lut[d1 >> 24 & 255] + '-' + lut[d2 & 63 | 128] + lut[d2 >> 8 & 255] + '-' + lut[d2 >> 16 & 255] + lut[d2 >> 24 & 255] + lut[d3 & 255] + lut[d3 >> 8 & 255] + lut[d3 >> 16 & 255] + lut[d3 >> 24 & 255];
     }
   }]);
 
-  return PlayerModel;
+  return Utils;
 })();
 
-module.exports = PlayerModel;
+module.exports = Utils;
 },{}],7:[function(require,module,exports){
 'use strict';
 
@@ -207,49 +344,104 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var GameView = (function () {
-  function GameView(gameModel, engine) {
-    _classCallCheck(this, GameView);
+var Utils = require('utils');
 
-    this.gameModel = gameModel;
+var Fps = (function () {
+  function Fps(engine, event) {
+    _classCallCheck(this, Fps);
+
     this.engine = engine;
-    console.log('GameView constructor, model, engine: ', this.gameModel, this.engine);
+    this.event = event;
 
-    this.init();
+    this.type = 'fps';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
+
+    this.frameRate = 0;
+    this.lastFrameCount = 0;
   }
 
-  _createClass(GameView, [{
+  _createClass(Fps, [{
     key: 'init',
-    value: function init() {
-      this.engine.createCanvas(700, 700);
-      this.engine.background(25, 25, 0);
+    value: function init() {}
+  }, {
+    key: 'update',
+    value: function update() {
+      if (this.lastFrameCount + 30 < this.engine.frameCount) {
+        this.lastFrameCount = this.engine.frameCount;
+        this.frameRate = this.engine.frameRate();
+      }
     }
   }, {
     key: 'render',
     value: function render() {
-      // console.log('gameView render');
-
-      var playerModel = this.gameModel.playerModel;
-      var position = playerModel.position;
-      var dimensions = playerModel.dimensions;
-      var color = playerModel.color;
-
-      this.engine.rectMode(this.engine.RADIUS);
-      this.engine.noStroke();
-      this.engine.fill(color[0], color[1], color[2]);
-      this.engine.rect(position[0], position[1], dimensions[0], dimensions[1]);
-
-      this.engine.background(25, 25, 25, 5);
-
       this.engine.fill(0, 128, 128);
-      this.engine.rect(0, 0, 200, 80);
+      this.engine.rect(0, 0, 50, 20);
       this.engine.fill(255, 255, 255);
-      this.engine.text(Math.round(this.engine.frameRate()), 0, 0, 200, 80);
+      this.engine.text(Math.round(this.frameRate) + ' fps', 0, 0, 200, 80);
     }
   }]);
 
-  return GameView;
+  return Fps;
 })();
 
-module.exports = GameView;
-},{}]},{},[1])
+module.exports = Fps;
+},{"utils":6}],8:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var Utils = require('utils');
+
+var Player = (function () {
+  function Player(engine, event) {
+    _classCallCheck(this, Player);
+
+    this.engine = engine;
+    this.event = event;
+
+    this.type = 'player';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
+
+    this.isColliding = false;
+    this.collidingWith = null;
+
+    this.x = 0;
+    this.y = 0;
+    this.width = this.height = this.radius = 20;
+
+    this.level = 1;
+    this.color = [255, 204, 0, 255];
+  }
+
+  _createClass(Player, [{
+    key: 'init',
+    value: function init() {}
+  }, {
+    key: 'update',
+    value: function update() {
+      this.x = this.engine.mouseX;
+      this.y = this.engine.mouseY;
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+
+      var alpha = this.isColliding ? 50 : 255;
+
+      this.engine.noStroke();
+      this.engine.fill(this.color[0], this.color[1], this.color[2], alpha);
+
+      this.engine.ellipseMode(this.engine.RADIUS);
+      this.engine.ellipse(this.x, this.y, this.width, this.height);
+    }
+  }]);
+
+  return Player;
+})();
+
+module.exports = Player;
+},{"utils":6}]},{},[1])

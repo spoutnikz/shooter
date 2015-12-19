@@ -4,33 +4,45 @@ var _createClass = (function () { function defineProperties(target, props) { for
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var GameModel = require('gameModel');
-var GameView = require('gameView');
+var Utils = require('utils');
 
-var GameController = (function () {
-  function GameController(engine) {
-    _classCallCheck(this, GameController);
+var Fps = (function () {
+  function Fps(engine, event) {
+    _classCallCheck(this, Fps);
 
     this.engine = engine;
-    this.gameModel = new GameModel();
-    this.gameView = new GameView(this.gameModel, this.engine);
-    console.log('GameController constructor');
+    this.event = event;
+
+    this.type = 'fps';
+    this.uid = Utils.uid();
+    console.log('uid:', this.uid);
+
+    this.frameRate = 0;
+    this.lastFrameCount = 0;
   }
 
-  _createClass(GameController, [{
+  _createClass(Fps, [{
+    key: 'init',
+    value: function init() {}
+  }, {
     key: 'update',
     value: function update() {
-      var playerModel = this.gameModel.playerModel;
-      playerModel.position = [this.engine.mouseX, this.engine.mouseY];
+      if (this.lastFrameCount + 30 < this.engine.frameCount) {
+        this.lastFrameCount = this.engine.frameCount;
+        this.frameRate = this.engine.frameRate();
+      }
     }
   }, {
     key: 'render',
     value: function render() {
-      this.gameView.render();
+      this.engine.fill(0, 128, 128);
+      this.engine.rect(0, 0, 50, 20);
+      this.engine.fill(255, 255, 255);
+      this.engine.text(Math.round(this.frameRate) + ' fps', 0, 0, 200, 80);
     }
   }]);
 
-  return GameController;
+  return Fps;
 })();
 
-module.exports = GameController;
+module.exports = Fps;
