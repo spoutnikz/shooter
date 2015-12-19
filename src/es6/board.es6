@@ -9,8 +9,9 @@ class Board {
     this.event = event;
 
     this.type = 'board';
+    this.group = 'stage';
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     // this.alpha = 5;
     this.alpha = 255;

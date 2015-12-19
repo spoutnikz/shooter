@@ -14,8 +14,9 @@ var Fps = (function () {
     this.event = event;
 
     this.type = 'fps';
+    this.group = 'stage';
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.frameRate = 0;
     this.lastFrameCount = 0;

@@ -26,21 +26,34 @@ var Application = (function () {
 
     console.log('Application constructor');
 
+    // define all entity maps
     this.entities = new Map();
     this.entities.set('collidable', new Map());
     this.entities.set('stage', new Map());
 
+    // init event manager
     this.event = new Event();
     this.event.addListener('kill', this.kill.bind(this));
+    this.event.addListener('register', this.register.bind(this));
+
+    // init time
+    this.initMs = null; // milliseconds, start of the game time
+    this.initAmountBugs = 4;
+    this.bugCount = 0;
 
     this.init();
   }
 
   _createClass(Application, [{
     key: 'init',
+
+    /**
+     * Init engine
+     */
     value: function init() {
       var _this = this;
 
+      // p5 instance mode initializes this way
       this.engine = new p5(function (p) {
         p.setup = _this.setup.bind(_this);
         p.draw = _this.draw.bind(_this);
@@ -48,9 +61,16 @@ var Application = (function () {
     }
   }, {
     key: 'setup',
+
+    /**
+     * Engine setup
+     */
     value: function setup() {
+
       console.log('engine setup');
       window.p = this.engine;
+
+      this.initMs = window.performance.now();
 
       // collision detection
       this.quad = new QuadTree({ x: 0, y: 0, width: 640, height: 360 }, false, 7);
@@ -59,12 +79,11 @@ var Application = (function () {
       var board = new Board(this.engine, this.event);
       var fps = new Fps(this.engine, this.event);
       var player = new Player(this.engine, this.event);
-
       this.entities.get('stage').set(board.uid, board);
       this.entities.get('stage').set(fps.uid, fps);
       this.entities.get('collidable').set(player.uid, player);
 
-      for (var i = 0; i < 50; i++) {
+      for (var i = 0; i < this.initAmountBugs; i++) {
         var bug = new Bug(this.engine, this.event);
         this.entities.get('collidable').set(bug.uid, bug);
       };
@@ -76,19 +95,76 @@ var Application = (function () {
   }, {
     key: 'draw',
 
-    // main loop
+    /**
+     * Engine loop
+     */
     value: function draw() {
-      var _this2 = this;
+
+      this.addBugs();
 
       // reset quad tree
       this.quad.clear();
       this.quad.insert(this.entities.get('collidable'));
 
       // collision detection
+      this.collisions();
+
+      // stage entities updates & renders
+      this.entities.get('stage').forEach(function (entity) {
+        entity.update();
+        entity.render(); // put in a separate loop?
+      });
+
+      // collidable entities updates & renders
+      this.entities.get('collidable').forEach(function (entity) {
+        entity.update();
+        entity.render(); // put in a separate loop?
+      });
+    }
+  }, {
+    key: 'kill',
+
+    /**
+     * Process kill request
+     */
+    value: function kill(me) {
+
+      if (me.type === 'bug') this.bugCount--;
+      this.entities.get(me.group)['delete'](me.uid);
+    }
+  }, {
+    key: 'addBugs',
+
+    /**
+     * Add more and more bugs over time
+     */
+    value: function addBugs() {
+
+      var diff = (window.performance.now() - this.initMs) / 10000;
+      // x^2 * 0.2 + 4
+      var amount = Math.round(diff * diff * 0.2 + this.initAmountBugs);
+
+      // not great, player is included in the count
+      if (this.bugCount < amount) {
+        var bug = new Bug(this.engine, this.event);
+        this.entities.get('collidable').set(bug.uid, bug);
+        this.bugCount++;
+      }
+    }
+  }, {
+    key: 'collisions',
+
+    /**
+     * Test all collidables against each other
+     */
+    value: function collisions() {
+      var _this2 = this;
+
       this.entities.get('collidable').forEach(function (entity, i) {
         var items = _this2.quad.retrieve(entity);
+
         items.forEach(function (item) {
-          if (item.isColliding && entity.isColliding || entity.type === item.type) {
+          if (item.isColliding && entity.isColliding || entity.side === item.side) {
             return;
           }
           if (Utils.intersects(entity.x, entity.y, entity.radius, item.x, item.y, item.radius)) {
@@ -97,23 +173,12 @@ var Application = (function () {
           }
         });
       });
-
-      // entities updates & renders
-      this.entities.get('stage').forEach(function (entity) {
-        entity.update();
-        entity.render(); // put in a separate loop?
-      });
-
-      this.entities.get('collidable').forEach(function (entity) {
-        entity.update();
-        entity.render(); // put in a separate loop?
-      });
     }
   }, {
-    key: 'kill',
-    value: function kill(me) {
+    key: 'register',
+    value: function register(entity) {
 
-      this.entities.get('collidable')['delete'](me.uid);
+      this.entities.get(entity.group).set(entity.uid, entity);
     }
   }]);
 
@@ -121,7 +186,7 @@ var Application = (function () {
 })();
 
 module.exports = Application;
-},{"board":3,"bug":4,"event":5,"fps":7,"player":8,"utils":6}],3:[function(require,module,exports){
+},{"board":3,"bug":4,"event":6,"fps":8,"player":9,"utils":7}],3:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -138,8 +203,9 @@ var Board = (function () {
     this.event = event;
 
     this.type = 'board';
+    this.group = 'stage';
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     // this.alpha = 5;
     this.alpha = 255;
@@ -162,7 +228,7 @@ var Board = (function () {
 })();
 
 module.exports = Board;
-},{"utils":6}],4:[function(require,module,exports){
+},{"utils":7}],4:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -179,8 +245,10 @@ var Bug = (function () {
     this.event = event;
 
     this.type = 'bug';
+    this.group = 'collidable';
+    this.side = 'empire'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -192,7 +260,7 @@ var Bug = (function () {
     this.index = null;
     this.level = 1;
     this.color = [Utils.rand(50, 255), Utils.rand(50, 255), Utils.rand(50, 255), 255];
-    this.velocity = Utils.rand(10, 100) / 100;
+    this.velocity = Utils.rand(20, 200) / 100;
   }
 
   _createClass(Bug, [{
@@ -201,6 +269,7 @@ var Bug = (function () {
   }, {
     key: 'update',
     value: function update() {
+
       this.x = this.x - this.velocity; // drift to left
 
       if (this.x < 0 || this.isColliding) {
@@ -225,7 +294,71 @@ var Bug = (function () {
 })();
 
 module.exports = Bug;
-},{"utils":6}],5:[function(require,module,exports){
+},{"utils":7}],5:[function(require,module,exports){
+'use strict';
+
+var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var Utils = require('utils');
+
+var Bullet = (function () {
+  function Bullet(engine, event) {
+    _classCallCheck(this, Bullet);
+
+    this.engine = engine;
+    this.event = event;
+
+    this.type = 'bullet';
+    this.group = 'collidable';
+    this.side = 'rebels'; // empire|rebels, for ff mgmt
+    this.uid = Utils.uid();
+    // console.log('uid:', this.uid);
+
+    this.isColliding = false;
+    this.collidingWith = null;
+
+    this.x = 0;
+    this.y = 0;
+    this.width = this.height = this.radius = 3;
+
+    this.index = null;
+    this.level = 1;
+    this.color = [255, 255, 255, 255];
+    this.velocity = 5;
+  }
+
+  _createClass(Bullet, [{
+    key: 'init',
+    value: function init() {}
+  }, {
+    key: 'update',
+    value: function update() {
+
+      this.x = this.x + this.velocity; // drift to right
+
+      if (this.x < 0 || this.isColliding) {
+        this.event.emit('kill', this);
+      }
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+
+      this.engine.noStroke();
+      this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
+
+      this.engine.ellipseMode(this.engine.RADIUS);
+      this.engine.ellipse(this.x, this.y, this.width, this.height);
+    }
+  }]);
+
+  return Bullet;
+})();
+
+module.exports = Bullet;
+},{"utils":7}],6:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -290,7 +423,7 @@ var Event = (function () {
 })();
 
 module.exports = Event;
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -305,12 +438,14 @@ var Utils = (function () {
   _createClass(Utils, null, [{
     key: 'rand',
     value: function rand(min, max) {
+
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
   }, {
     key: 'intersects',
     value: function intersects(x1, y1, r1, x2, y2, r2) {
       // does two circles intersects?
+
       var distanceSq = Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
       return Math.pow(r2 - r1, 2) <= distanceSq && distanceSq <= Math.pow(r1 + r2, 2);
     }
@@ -331,13 +466,55 @@ var Utils = (function () {
 
       return lut[d0 & 255] + lut[d0 >> 8 & 255] + lut[d0 >> 16 & 255] + lut[d0 >> 24 & 255] + '-' + lut[d1 & 255] + lut[d1 >> 8 & 255] + '-' + lut[d1 >> 16 & 15 | 64] + lut[d1 >> 24 & 255] + '-' + lut[d2 & 63 | 128] + lut[d2 >> 8 & 255] + '-' + lut[d2 >> 16 & 255] + lut[d2 >> 24 & 255] + lut[d3 & 255] + lut[d3 >> 8 & 255] + lut[d3 >> 16 & 255] + lut[d3 >> 24 & 255];
     }
+  }, {
+    key: 'throttle',
+
+    /**
+     * THANKS @TRO :)
+     * 
+     * Ensure the methods calls are separeted by at least the given threshold.
+     *
+     * e.g.
+     *
+     *   var fn = throttle(callback, 100, console);
+     *
+     *   fn(); // perform the callback
+     *   fn(); // do nothing
+     *   ... 50 milliseconds later
+     *   fn(); // do nothing
+     *   ... 50 milliseconds later
+     *   fn(); // perform the callback
+     *   fn(); // do nothing
+     *
+     * @param {Function} fn
+     * @param {int} threshhold
+     * @param {mixed} context
+     * @return {Function}
+     */
+    value: function throttle(fn, threshhold, context) {
+
+      threshhold = threshhold || 250;
+      context = context || this;
+
+      var last = false;
+
+      return function () {
+        var args = arguments;
+        var now = window.performance.now();
+
+        if (last && now < last + threshhold) return;
+
+        last = now;
+        fn.apply(context, args);
+      };
+    }
   }]);
 
   return Utils;
 })();
 
 module.exports = Utils;
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -354,8 +531,9 @@ var Fps = (function () {
     this.event = event;
 
     this.type = 'fps';
+    this.group = 'stage';
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.frameRate = 0;
     this.lastFrameCount = 0;
@@ -386,7 +564,7 @@ var Fps = (function () {
 })();
 
 module.exports = Fps;
-},{"utils":6}],8:[function(require,module,exports){
+},{"utils":7}],9:[function(require,module,exports){
 'use strict';
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
@@ -394,6 +572,7 @@ var _createClass = (function () { function defineProperties(target, props) { for
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var Utils = require('utils');
+var Bullet = require('bullet');
 
 var Player = (function () {
   function Player(engine, event) {
@@ -403,8 +582,10 @@ var Player = (function () {
     this.event = event;
 
     this.type = 'player';
+    this.group = 'collidable';
+    this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -415,6 +596,10 @@ var Player = (function () {
 
     this.level = 1;
     this.color = [255, 204, 0, 255];
+
+    this.fireRate = 200 / this.level; // ms
+
+    this.fireThrottle = Utils.throttle(this.fire, this.fireRate, this);
   }
 
   _createClass(Player, [{
@@ -425,6 +610,10 @@ var Player = (function () {
     value: function update() {
       this.x = this.engine.mouseX;
       this.y = this.engine.mouseY;
+
+      if (this.engine.mouseIsPressed) {
+        this.fireThrottle();
+      }
     }
   }, {
     key: 'render',
@@ -438,10 +627,19 @@ var Player = (function () {
       this.engine.ellipseMode(this.engine.RADIUS);
       this.engine.ellipse(this.x, this.y, this.width, this.height);
     }
+  }, {
+    key: 'fire',
+    value: function fire() {
+
+      var bullet = new Bullet(this.engine, this.event);
+      bullet.x = this.x + 25;
+      bullet.y = this.y;
+      this.event.emit('register', bullet);
+    }
   }]);
 
   return Player;
 })();
 
 module.exports = Player;
-},{"utils":6}]},{},[1])
+},{"bullet":5,"utils":7}]},{},[1])

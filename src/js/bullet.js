@@ -6,36 +6,58 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 var Utils = require('utils');
 
-var Board = (function () {
-  function Board(engine, event) {
-    _classCallCheck(this, Board);
+var Bullet = (function () {
+  function Bullet(engine, event) {
+    _classCallCheck(this, Bullet);
 
     this.engine = engine;
     this.event = event;
 
-    this.type = 'board';
-    this.group = 'stage';
+    this.type = 'bullet';
+    this.group = 'collidable';
+    this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
     // console.log('uid:', this.uid);
 
-    // this.alpha = 5;
-    this.alpha = 255;
+    this.isColliding = false;
+    this.collidingWith = null;
+
+    this.x = 0;
+    this.y = 0;
+    this.width = this.height = this.radius = 3;
+
+    this.index = null;
+    this.level = 1;
+    this.color = [255, 255, 255, 255];
+    this.velocity = 5;
   }
 
-  _createClass(Board, [{
+  _createClass(Bullet, [{
     key: 'init',
     value: function init() {}
   }, {
     key: 'update',
-    value: function update() {}
+    value: function update() {
+
+      this.x = this.x + this.velocity; // drift to right
+
+      if (this.x < 0 || this.isColliding) {
+        this.event.emit('kill', this);
+      }
+    }
   }, {
     key: 'render',
     value: function render() {
-      this.engine.background(25, 25, 25, 255);
+
+      this.engine.noStroke();
+      this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
+
+      this.engine.ellipseMode(this.engine.RADIUS);
+      this.engine.ellipse(this.x, this.y, this.width, this.height);
     }
   }]);
 
-  return Board;
+  return Bullet;
 })();
 
-module.exports = Board;
+module.exports = Bullet;

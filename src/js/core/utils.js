@@ -12,12 +12,14 @@ var Utils = (function () {
   _createClass(Utils, null, [{
     key: 'rand',
     value: function rand(min, max) {
+
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
   }, {
     key: 'intersects',
     value: function intersects(x1, y1, r1, x2, y2, r2) {
       // does two circles intersects?
+
       var distanceSq = Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2);
       return Math.pow(r2 - r1, 2) <= distanceSq && distanceSq <= Math.pow(r1 + r2, 2);
     }
@@ -37,6 +39,48 @@ var Utils = (function () {
       var d3 = Math.random() * 4294967295 | 0;
 
       return lut[d0 & 255] + lut[d0 >> 8 & 255] + lut[d0 >> 16 & 255] + lut[d0 >> 24 & 255] + '-' + lut[d1 & 255] + lut[d1 >> 8 & 255] + '-' + lut[d1 >> 16 & 15 | 64] + lut[d1 >> 24 & 255] + '-' + lut[d2 & 63 | 128] + lut[d2 >> 8 & 255] + '-' + lut[d2 >> 16 & 255] + lut[d2 >> 24 & 255] + lut[d3 & 255] + lut[d3 >> 8 & 255] + lut[d3 >> 16 & 255] + lut[d3 >> 24 & 255];
+    }
+  }, {
+    key: 'throttle',
+
+    /**
+     * THANKS @TRO :)
+     * 
+     * Ensure the methods calls are separeted by at least the given threshold.
+     *
+     * e.g.
+     *
+     *   var fn = throttle(callback, 100, console);
+     *
+     *   fn(); // perform the callback
+     *   fn(); // do nothing
+     *   ... 50 milliseconds later
+     *   fn(); // do nothing
+     *   ... 50 milliseconds later
+     *   fn(); // perform the callback
+     *   fn(); // do nothing
+     *
+     * @param {Function} fn
+     * @param {int} threshhold
+     * @param {mixed} context
+     * @return {Function}
+     */
+    value: function throttle(fn, threshhold, context) {
+
+      threshhold = threshhold || 250;
+      context = context || this;
+
+      var last = false;
+
+      return function () {
+        var args = arguments;
+        var now = window.performance.now();
+
+        if (last && now < last + threshhold) return;
+
+        last = now;
+        fn.apply(context, args);
+      };
     }
   }]);
 

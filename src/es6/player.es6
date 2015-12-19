@@ -1,6 +1,7 @@
 'use strict';
 
 var Utils = require('utils');
+var Bullet = require('bullet');
 
 class Player {
 
@@ -9,8 +10,10 @@ class Player {
     this.event = event;
 
     this.type = 'player';
+    this.group = 'collidable';
+    this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -21,13 +24,22 @@ class Player {
 
     this.level = 1;
     this.color = [255, 204, 0, 255];
+
+    this.fireRate = 200 / this.level; // ms
+
+    this.fireThrottle = Utils.throttle(this.fire, this.fireRate, this);
   }
 
   init () {}
 
   update () {
-    this.x = this.engine.mouseX
+    this.x = this.engine.mouseX;
     this.y = this.engine.mouseY;
+
+    if (this.engine.mouseIsPressed) {
+      this.fireThrottle();
+    }
+
   }
 
   render () {
@@ -41,6 +53,17 @@ class Player {
     this.engine.ellipse(this.x, this.y, this.width, this.height);
 
   }
+
+
+  fire () {
+
+    let bullet = new Bullet(this.engine, this.event);
+    bullet.x = this.x + 25;
+    bullet.y = this.y;
+    this.event.emit('register', bullet);
+
+  }
+
 }
 
 module.exports = Player;

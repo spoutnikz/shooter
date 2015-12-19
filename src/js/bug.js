@@ -14,8 +14,10 @@ var Bug = (function () {
     this.event = event;
 
     this.type = 'bug';
+    this.group = 'collidable';
+    this.side = 'empire'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -27,7 +29,7 @@ var Bug = (function () {
     this.index = null;
     this.level = 1;
     this.color = [Utils.rand(50, 255), Utils.rand(50, 255), Utils.rand(50, 255), 255];
-    this.velocity = Utils.rand(10, 100) / 100;
+    this.velocity = Utils.rand(20, 200) / 100;
   }
 
   _createClass(Bug, [{
@@ -36,6 +38,7 @@ var Bug = (function () {
   }, {
     key: 'update',
     value: function update() {
+
       this.x = this.x - this.velocity; // drift to left
 
       if (this.x < 0 || this.isColliding) {

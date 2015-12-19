@@ -5,6 +5,7 @@ var _createClass = (function () { function defineProperties(target, props) { for
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
 var Utils = require('utils');
+var Bullet = require('bullet');
 
 var Player = (function () {
   function Player(engine, event) {
@@ -14,8 +15,10 @@ var Player = (function () {
     this.event = event;
 
     this.type = 'player';
+    this.group = 'collidable';
+    this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    console.log('uid:', this.uid);
+    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -26,6 +29,10 @@ var Player = (function () {
 
     this.level = 1;
     this.color = [255, 204, 0, 255];
+
+    this.fireRate = 200 / this.level; // ms
+
+    this.fireThrottle = Utils.throttle(this.fire, this.fireRate, this);
   }
 
   _createClass(Player, [{
@@ -36,6 +43,10 @@ var Player = (function () {
     value: function update() {
       this.x = this.engine.mouseX;
       this.y = this.engine.mouseY;
+
+      if (this.engine.mouseIsPressed) {
+        this.fireThrottle();
+      }
     }
   }, {
     key: 'render',
@@ -48,6 +59,15 @@ var Player = (function () {
 
       this.engine.ellipseMode(this.engine.RADIUS);
       this.engine.ellipse(this.x, this.y, this.width, this.height);
+    }
+  }, {
+    key: 'fire',
+    value: function fire() {
+
+      var bullet = new Bullet(this.engine, this.event);
+      bullet.x = this.x + 25;
+      bullet.y = this.y;
+      this.event.emit('register', bullet);
     }
   }]);
 
