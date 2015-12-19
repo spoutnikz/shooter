@@ -8,3 +8,4 @@ gulp watch
 
 Play:
 public/index.html
+left click to shoot

@@ -31,10 +31,14 @@ var Application = (function () {
     this.entities.set('collidable', new Map());
     this.entities.set('stage', new Map());
 
+    // define all asset maps
+    this.assets = new Map();
+
     // init event manager
     this.event = new Event();
-    this.event.addListener('kill', this.kill.bind(this));
-    this.event.addListener('register', this.register.bind(this));
+    this.event.addListener('kill', this.kill.bind(this)); // kill entity
+    this.event.addListener('register', this.register.bind(this)); // register entity to map
+    this.event.addListener('getAssets', this.getAssets.bind(this)); // get assets for entity
 
     // init time
     this.initMs = null; // milliseconds, start of the game time
@@ -55,9 +59,22 @@ var Application = (function () {
 
       // p5 instance mode initializes this way
       this.engine = new p5(function (p) {
+        p.preload = _this.preload.bind(_this);
         p.setup = _this.setup.bind(_this);
         p.draw = _this.draw.bind(_this);
       }, 'container');
+    }
+  }, {
+    key: 'preload',
+
+    /**
+     * Preload assets
+     */
+    value: function preload() {
+
+      // set bullet sprites
+      var bulletImgs = new Map([['floppy', this.engine.loadImage('images/floppy.png')]]);
+      this.assets.set('bullet', new Map([['images', bulletImgs]]));
     }
   }, {
     key: 'setup',
@@ -161,7 +178,7 @@ var Application = (function () {
       var _this2 = this;
 
       this.entities.get('collidable').forEach(function (entity, i) {
-        var items = _this2.quad.retrieve(entity);
+        var items = _this2.quad.retrieve(entity); // quad tree magic
 
         items.forEach(function (item) {
           if (item.isColliding && entity.isColliding || entity.side === item.side) {
@@ -179,6 +196,12 @@ var Application = (function () {
     value: function register(entity) {
 
       this.entities.get(entity.group).set(entity.uid, entity);
+    }
+  }, {
+    key: 'getAssets',
+    value: function getAssets(entity) {
+
+      entity.assets = this.assets.get(entity.type);
     }
   }]);
 
@@ -321,12 +344,18 @@ var Bullet = (function () {
 
     this.x = 0;
     this.y = 0;
-    this.width = this.height = this.radius = 3;
+    this.width = this.height = this.radius = 7.5;
 
     this.index = null;
     this.level = 1;
     this.color = [255, 255, 255, 255];
     this.velocity = 5;
+    this.assets = null;
+    this.angle = 0;
+
+    this.bulletType = 'floppy';
+
+    this.event.emit('getAssets', this); // call for global assets
   }
 
   _createClass(Bullet, [{
@@ -337,6 +366,7 @@ var Bullet = (function () {
     value: function update() {
 
       this.x = this.x + this.velocity; // drift to right
+      this.angle += 10;
 
       if (this.x < 0 || this.isColliding) {
         this.event.emit('kill', this);
@@ -346,11 +376,14 @@ var Bullet = (function () {
     key: 'render',
     value: function render() {
 
-      this.engine.noStroke();
-      this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
+      var img = this.assets.get('images').get(this.bulletType);
+      this.engine.image(img, 0, 0, img.width, img.height, this.x - img.width / 2, this.y - img.height / 2, img.width, img.height);
 
-      this.engine.ellipseMode(this.engine.RADIUS);
-      this.engine.ellipse(this.x, this.y, this.width, this.height);
+      // this.engine.noStroke();
+      // this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
+
+      // this.engine.ellipseMode(this.engine.RADIUS);
+      // this.engine.ellipse(this.x, this.y, this.width, this.height);
     }
   }]);
 

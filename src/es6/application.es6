@@ -17,10 +17,14 @@ class Application {
     this.entities.set('collidable', new Map());
     this.entities.set('stage', new Map());
 
+    // define all asset maps
+    this.assets = new Map();
+
     // init event manager
     this.event = new Event();
-    this.event.addListener('kill', this.kill.bind(this));
-    this.event.addListener('register', this.register.bind(this));
+    this.event.addListener('kill', this.kill.bind(this)); // kill entity
+    this.event.addListener('register', this.register.bind(this)); // register entity to map
+    this.event.addListener('getAssets', this.getAssets.bind(this)); // get assets for entity
 
     // init time
     this.initMs = null; // milliseconds, start of the game time
@@ -39,9 +43,22 @@ class Application {
 
     // p5 instance mode initializes this way
     this.engine = new p5((p) => {
+      p.preload = this.preload.bind(this);
       p.setup = this.setup.bind(this);
       p.draw = this.draw.bind(this);
     }, 'container');
+
+  }
+
+
+  /**
+   * Preload assets
+   */
+  preload () {
+
+    // set bullet sprites
+    let bulletImgs = new Map([['floppy', this.engine.loadImage('images/floppy.png')]]);
+    this.assets.set('bullet', new Map([['images', bulletImgs]]));
 
   }
 
@@ -145,7 +162,7 @@ class Application {
   collisions () {
 
     this.entities.get('collidable').forEach((entity, i) => {
-      let items = this.quad.retrieve(entity);
+      let items = this.quad.retrieve(entity); // quad tree magic
 
       items.forEach((item) => {
         if ( (item.isColliding && entity.isColliding) || (entity.side === item.side) ) {
@@ -163,8 +180,15 @@ class Application {
 
 
   register (entity) {
-    
+
     this.entities.get(entity.group).set(entity.uid, entity);
+
+  }
+
+
+  getAssets (entity) {
+    
+    entity.assets = this.assets.get(entity.type);
 
   }
 

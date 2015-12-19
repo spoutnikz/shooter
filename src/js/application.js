@@ -22,10 +22,14 @@ var Application = (function () {
     this.entities.set('collidable', new Map());
     this.entities.set('stage', new Map());
 
+    // define all asset maps
+    this.assets = new Map();
+
     // init event manager
     this.event = new Event();
-    this.event.addListener('kill', this.kill.bind(this));
-    this.event.addListener('register', this.register.bind(this));
+    this.event.addListener('kill', this.kill.bind(this)); // kill entity
+    this.event.addListener('register', this.register.bind(this)); // register entity to map
+    this.event.addListener('getAssets', this.getAssets.bind(this)); // get assets for entity
 
     // init time
     this.initMs = null; // milliseconds, start of the game time
@@ -46,9 +50,22 @@ var Application = (function () {
 
       // p5 instance mode initializes this way
       this.engine = new p5(function (p) {
+        p.preload = _this.preload.bind(_this);
         p.setup = _this.setup.bind(_this);
         p.draw = _this.draw.bind(_this);
       }, 'container');
+    }
+  }, {
+    key: 'preload',
+
+    /**
+     * Preload assets
+     */
+    value: function preload() {
+
+      // set bullet sprites
+      var bulletImgs = new Map([['floppy', this.engine.loadImage('images/floppy.png')]]);
+      this.assets.set('bullet', new Map([['images', bulletImgs]]));
     }
   }, {
     key: 'setup',
@@ -152,7 +169,7 @@ var Application = (function () {
       var _this2 = this;
 
       this.entities.get('collidable').forEach(function (entity, i) {
-        var items = _this2.quad.retrieve(entity);
+        var items = _this2.quad.retrieve(entity); // quad tree magic
 
         items.forEach(function (item) {
           if (item.isColliding && entity.isColliding || entity.side === item.side) {
@@ -170,6 +187,12 @@ var Application = (function () {
     value: function register(entity) {
 
       this.entities.get(entity.group).set(entity.uid, entity);
+    }
+  }, {
+    key: 'getAssets',
+    value: function getAssets(entity) {
+
+      entity.assets = this.assets.get(entity.type);
     }
   }]);
 
