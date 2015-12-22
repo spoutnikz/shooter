@@ -337,7 +337,6 @@ var Bullet = (function () {
     this.group = 'collidable';
     this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -348,7 +347,6 @@ var Bullet = (function () {
 
     this.index = null;
     this.level = 1;
-    this.color = [255, 255, 255, 255];
     this.velocity = 5;
     this.assets = null;
     this.angle = 0;
@@ -356,6 +354,7 @@ var Bullet = (function () {
     this.bulletType = 'floppy';
 
     this.event.emit('getAssets', this); // call for global assets
+    this.img = this.assets.get('images').get(this.bulletType);
   }
 
   _createClass(Bullet, [{
@@ -368,22 +367,24 @@ var Bullet = (function () {
       this.x = this.x + this.velocity; // drift to right
       this.angle += 10;
 
-      if (this.x < 0 || this.isColliding) {
+      if (this.x > 640 || this.isColliding) {
         this.event.emit('kill', this);
       }
+
+      this.angle += 4;
+      if (this.angle % 360 === 0) this.angle = 0;
     }
   }, {
     key: 'render',
     value: function render() {
 
-      var img = this.assets.get('images').get(this.bulletType);
-      this.engine.image(img, 0, 0, img.width, img.height, this.x - img.width / 2, this.y - img.height / 2, img.width, img.height);
-
-      // this.engine.noStroke();
-      // this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
-
-      // this.engine.ellipseMode(this.engine.RADIUS);
-      // this.engine.ellipse(this.x, this.y, this.width, this.height);
+      this.engine.push();
+      this.engine.translate(this.x, this.y);
+      this.engine.angleMode(this.engine.DEGREES);
+      this.engine.rotate(this.angle);
+      this.engine.imageMode(this.engine.CENTER);
+      this.engine.image(this.img, 0, 0);
+      this.engine.pop();
     }
   }]);
 
@@ -486,18 +487,7 @@ var Utils = (function () {
     key: 'uid',
     value: function uid() {
 
-      // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript#answer-21963136
-      // lookuptable
-      var lut = [];for (var i = 0; i < 256; i++) {
-        lut[i] = (i < 16 ? '0' : '') + i.toString(16);
-      }
-
-      var d0 = Math.random() * 4294967295 | 0;
-      var d1 = Math.random() * 4294967295 | 0;
-      var d2 = Math.random() * 4294967295 | 0;
-      var d3 = Math.random() * 4294967295 | 0;
-
-      return lut[d0 & 255] + lut[d0 >> 8 & 255] + lut[d0 >> 16 & 255] + lut[d0 >> 24 & 255] + '-' + lut[d1 & 255] + lut[d1 >> 8 & 255] + '-' + lut[d1 >> 16 & 15 | 64] + lut[d1 >> 24 & 255] + '-' + lut[d2 & 63 | 128] + lut[d2 >> 8 & 255] + '-' + lut[d2 >> 16 & 255] + lut[d2 >> 24 & 255] + lut[d3 & 255] + lut[d3 >> 8 & 255] + lut[d3 >> 16 & 255] + lut[d3 >> 24 & 255];
+      return window.performance.now() * Math.random();
     }
   }, {
     key: 'throttle',

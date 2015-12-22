@@ -14,7 +14,6 @@ class Bullet {
     this.group = 'collidable';
     this.side = 'rebels'; // empire|rebels, for ff mgmt
     this.uid = Utils.uid();
-    // console.log('uid:', this.uid);
 
     this.isColliding = false;
     this.collidingWith = null;
@@ -25,7 +24,6 @@ class Bullet {
 
     this.index = null;
     this.level = 1;
-    this.color = [255, 255, 255, 255];
     this.velocity = 5;
     this.assets = null;
     this.angle = 0;
@@ -33,6 +31,7 @@ class Bullet {
     this.bulletType = 'floppy';
 
     this.event.emit('getAssets', this); // call for global assets
+    this.img = this.assets.get('images').get(this.bulletType);
 
   }
 
@@ -45,25 +44,28 @@ class Bullet {
     this.x = this.x + this.velocity; // drift to right
     this.angle += 10;
 
-    if (this.x < 0 || this.isColliding) {
+    if (this.x > 640 || this.isColliding) {
       this.event.emit('kill', this);
     }
+
+    this.angle+=4;
+    if (this.angle % 360 === 0) this.angle = 0;
 
   }
 
 
   render () {
 
-    let img = this.assets.get('images').get(this.bulletType);
-    this.engine.image(img, 0, 0, img.width, img.height, this.x - img.width/2, this.y - img.height/2, img.width, img.height);
-
-    // this.engine.noStroke();
-    // this.engine.fill(this.color[0], this.color[1], this.color[2], this.color[3]);
-
-    // this.engine.ellipseMode(this.engine.RADIUS);
-    // this.engine.ellipse(this.x, this.y, this.width, this.height);
+    this.engine.push();
+    this.engine.translate(this.x, this.y);
+    this.engine.angleMode(this.engine.DEGREES);
+    this.engine.rotate(this.angle);
+    this.engine.imageMode(this.engine.CENTER);
+    this.engine.image(this.img, 0, 0);
+    this.engine.pop();
 
   }
+
 }
 
 module.exports = Bullet;

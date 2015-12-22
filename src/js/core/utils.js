@@ -27,18 +27,7 @@ var Utils = (function () {
     key: 'uid',
     value: function uid() {
 
-      // http://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript#answer-21963136
-      // lookuptable
-      var lut = [];for (var i = 0; i < 256; i++) {
-        lut[i] = (i < 16 ? '0' : '') + i.toString(16);
-      }
-
-      var d0 = Math.random() * 4294967295 | 0;
-      var d1 = Math.random() * 4294967295 | 0;
-      var d2 = Math.random() * 4294967295 | 0;
-      var d3 = Math.random() * 4294967295 | 0;
-
-      return lut[d0 & 255] + lut[d0 >> 8 & 255] + lut[d0 >> 16 & 255] + lut[d0 >> 24 & 255] + '-' + lut[d1 & 255] + lut[d1 >> 8 & 255] + '-' + lut[d1 >> 16 & 15 | 64] + lut[d1 >> 24 & 255] + '-' + lut[d2 & 63 | 128] + lut[d2 >> 8 & 255] + '-' + lut[d2 >> 16 & 255] + lut[d2 >> 24 & 255] + lut[d3 & 255] + lut[d3 >> 8 & 255] + lut[d3 >> 16 & 255] + lut[d3 >> 24 & 255];
+      return window.performance.now() * Math.random();
     }
   }, {
     key: 'throttle',
