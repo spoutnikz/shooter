@@ -85,6 +85,7 @@ class Application {
     this.entities.get('collidable').set(player.uid, player);
 
     for (let i = 0; i < this.initAmountBugs; i++) {
+      this.bugCount++;
       let bug = new Bug(this.engine, this.event);
       this.entities.get('collidable').set(bug.uid, bug);
     };
@@ -187,7 +188,7 @@ class Application {
 
 
   getAssets (entity) {
-    
+
     entity.assets = this.assets.get(entity.type);
 
   }

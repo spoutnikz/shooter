@@ -101,6 +101,7 @@ var Application = (function () {
       this.entities.get('collidable').set(player.uid, player);
 
       for (var i = 0; i < this.initAmountBugs; i++) {
+        this.bugCount++;
         var bug = new Bug(this.engine, this.event);
         this.entities.get('collidable').set(bug.uid, bug);
       };
@@ -494,7 +495,7 @@ var Utils = (function () {
 
     /**
      * THANKS @TRO :)
-     * 
+     *
      * Ensure the methods calls are separeted by at least the given threshold.
      *
      * e.g.

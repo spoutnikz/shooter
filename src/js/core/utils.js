@@ -34,7 +34,7 @@ var Utils = (function () {
 
     /**
      * THANKS @TRO :)
-     * 
+     *
      * Ensure the methods calls are separeted by at least the given threshold.
      *
      * e.g.
