@@ -29,8 +29,6 @@ var Utils = (function () {
 
       return window.performance.now() * Math.random();
     }
-  }, {
-    key: 'throttle',
 
     /**
      * THANKS @TRO :)
@@ -54,6 +52,8 @@ var Utils = (function () {
      * @param {mixed} context
      * @return {Function}
      */
+  }, {
+    key: 'throttle',
     value: function throttle(fn, threshhold, context) {
 
       threshhold = threshhold || 250;

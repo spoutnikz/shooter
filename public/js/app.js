@@ -48,12 +48,12 @@ var Application = (function () {
     this.init();
   }
 
+  /**
+   * Init engine
+   */
+
   _createClass(Application, [{
     key: 'init',
-
-    /**
-     * Init engine
-     */
     value: function init() {
       var _this = this;
 
@@ -64,24 +64,24 @@ var Application = (function () {
         p.draw = _this.draw.bind(_this);
       }, 'container');
     }
-  }, {
-    key: 'preload',
 
     /**
      * Preload assets
      */
+  }, {
+    key: 'preload',
     value: function preload() {
 
       // set bullet sprites
       var bulletImgs = new Map([['floppy', this.engine.loadImage('images/floppy.png')]]);
       this.assets.set('bullet', new Map([['images', bulletImgs]]));
     }
-  }, {
-    key: 'setup',
 
     /**
      * Engine setup
      */
+  }, {
+    key: 'setup',
     value: function setup() {
 
       console.log('engine setup');
@@ -110,12 +110,12 @@ var Application = (function () {
       this.engine.createCanvas(640, 360);
       this.engine.background(25, 25, 0);
     }
-  }, {
-    key: 'draw',
 
     /**
      * Engine loop
      */
+  }, {
+    key: 'draw',
     value: function draw() {
 
       this.addBugs();
@@ -139,23 +139,23 @@ var Application = (function () {
         entity.render(); // put in a separate loop?
       });
     }
-  }, {
-    key: 'kill',
 
     /**
      * Process kill request
      */
+  }, {
+    key: 'kill',
     value: function kill(me) {
 
       if (me.type === 'bug') this.bugCount--;
       this.entities.get(me.group)['delete'](me.uid);
     }
-  }, {
-    key: 'addBugs',
 
     /**
      * Add more and more bugs over time
      */
+  }, {
+    key: 'addBugs',
     value: function addBugs() {
 
       var diff = (window.performance.now() - this.initMs) / 10000;
@@ -169,12 +169,12 @@ var Application = (function () {
         this.bugCount++;
       }
     }
-  }, {
-    key: 'collisions',
 
     /**
      * Test all collidables against each other
      */
+  }, {
+    key: 'collisions',
     value: function collisions() {
       var _this2 = this;
 
@@ -490,8 +490,6 @@ var Utils = (function () {
 
       return window.performance.now() * Math.random();
     }
-  }, {
-    key: 'throttle',
 
     /**
      * THANKS @TRO :)
@@ -515,6 +513,8 @@ var Utils = (function () {
      * @param {mixed} context
      * @return {Function}
      */
+  }, {
+    key: 'throttle',
     value: function throttle(fn, threshhold, context) {
 
       threshhold = threshhold || 250;
