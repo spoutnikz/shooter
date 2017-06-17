@@ -1,0 +1,8 @@
+# Editor      #
+###################
+.idea
+
+# Node modules / Build #
+########################
+# versioning of the modules to keep a working version accessible
+# node_modules
