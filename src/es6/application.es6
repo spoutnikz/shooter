@@ -1,11 +1,11 @@
 'use strict';
 
-var Board = require('board');
-var Fps = require('fps');
-var Player = require('player');
-var Bug = require('bug');
-var Utils = require('utils');
-var Event = require('event');
+const Board = require('board');
+const Fps = require('fps');
+const Player = require('player');
+const Bug = require('bug');
+const Utils = require('utils');
+const Event = require('event');
 
 class Application {
 
